@@ -180,6 +180,20 @@ static void testNoSkipErasureCallbacks(Operation *op) {
     op->erase();
   };
   auto noSkipBlockErasure = [](Block *block) {
+    // Don't erase blocks that belong to non-function operations (like
+    // gpu.launch) because those blocks will be destroyed when their parent
+    // operation is destroyed. Erasing them separately causes crashes.
+    Operation *parentOp = block->getParentOp();
+    if (parentOp && !isa<FunctionOpInterface>(parentOp) &&
+        !isa<ModuleOp>(parentOp)) {
+      // Skip blocks owned by operations like gpu.launch
+      return;
+    }
+    // Drop all uses from operations in this block before erasing,
+    // similar to what we do for operation erasure.
+    for (Operation &op : *block)
+      op.dropAllUses();
+    
     if (block->use_empty()) {
       llvm::outs() << "Erasing ";
       printBlock(block);
