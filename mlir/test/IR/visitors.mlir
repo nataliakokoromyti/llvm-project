@@ -382,3 +382,28 @@ func.func @unordered_cfg_with_loop() {
 // CHECK:       Cannot erase block ^bb2 from region 0 from operation 'regionOp0', still has uses
 // CHECK:       Cannot erase block ^bb3 from region 0 from operation 'regionOp0', still has uses
 // CHECK:       Cannot erase block ^bb4 from region 0 from operation 'regionOp0', still has uses
+
+// -----
+
+// CHECK-LABEL: Op pre-order visits
+// CHECK: Visiting op 'gpu.launch'
+// CHECK: Block post-order erasures (no skip)
+// CHECK-NOT: Erasing block {{.*}} from region 0 from operation 'gpu.launch'
+// Test that blocks inside gpu.launch (and other operations with regions)
+// are not erased separately during block erasure callbacks, as they are
+// owned by their parent operation and will be destroyed when the parent
+// is destroyed. This is a regression test for issue #178099.
+func.func @gpu_launch_with_branches() {
+  %c0 = arith.constant 0 : index
+  %c1 = arith.constant 1 : index
+  %c128 = arith.constant 128 : index
+  %c256 = arith.constant 256 : index
+  gpu.launch blocks(%bx, %by, %bz) in (%grid_x = %c256, %grid_y = %c1, %grid_z = %c1)
+            threads(%tx, %ty, %tz) in (%block_x = %c128, %block_y = %c1, %block_z = %c1) {
+    %cst = arith.constant 1.5 : f64
+    cf.br ^bb1
+  ^bb1:
+    gpu.terminator
+  }
+  return
+}
