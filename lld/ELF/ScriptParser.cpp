@@ -1180,19 +1180,13 @@ SymbolAssignment *ScriptParser::readAssignment(StringRef tok) {
 
   if (cmd) {
     cmd->dataSegmentRelroEnd = !savedSeenRelroEnd && ctx.script->seenRelroEnd;
-    // An unterminated assignment in an included script may advance lexing to
-    // the including script. Guard command string slicing against crossing
-    // buffer boundaries.
-    if (getCurrentMB().getBufferStart() != oldMB.getBufferStart()) {
-      size_t oldLine =
-          StringRef(oldMB.getBufferStart(), oldS - oldMB.getBufferStart())
-              .count('\n') +
-          1;
-      ErrAlways(ctx) << oldMB.getBufferIdentifier() << ":" << oldLine
-                     << ": unexpected EOF";
-      return nullptr;
-    }
-    cmd->commandString = StringRef(oldS, curTok.data() - oldS).str();
+    // Lexing may cross an INCLUDE boundary before we consume ';'. Keep
+    // commandString slicing within the original buffer to avoid invalid pointer
+    // arithmetic.
+    const char *end = curTok.data();
+    if (getCurrentMB().getBufferStart() != oldMB.getBufferStart())
+      end = oldMB.getBuffer().end();
+    cmd->commandString = StringRef(oldS, end - oldS).str();
     squeezeSpaces(cmd->commandString);
     expect(";");
   }
