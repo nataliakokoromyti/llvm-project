@@ -617,6 +617,8 @@ void LinkerDriver::parseDirectives(InputFile *file) {
     // `#pragma comment(linker, "/flag")`-generated sections.
     case OPT_editandcontinue:
     case OPT_guardsym:
+    case OPT_incremental:
+    case OPT_incremental_no:
     case OPT_throwingnew:
     case OPT_inferasanlibs:
     case OPT_inferasanlibs_no:
