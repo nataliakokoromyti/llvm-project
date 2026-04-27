@@ -30,6 +30,8 @@ int test(void) {
   int x = *p;               // expected-warning{{dereferencing p; was declared with a 'noderef' type}}
   x = *((int NODEREF *)p2); // expected-warning{{dereferencing expression marked as 'noderef'}}
 
+  int *d __attribute__((noderef)); // expected-warning{{'noderef' attribute ignored when parsing type}}
+
   int NODEREF **q;
   int *NODEREF *q2; // expected-note 4 {{q2 declared here}}
 

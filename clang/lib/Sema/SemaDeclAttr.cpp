@@ -7442,6 +7442,17 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
       assert(AL.isTypeAttr() && "Non-type attribute not handled");
     }
     if (AL.isTypeAttr()) {
+      // GNU noderef written after the declarator name is not silently
+      // accepted.
+      if (AL.getKind() == ParsedAttr::AT_NoDeref &&
+          !AL.isStandardAttributeSyntax() && D &&
+          S.getSourceManager().isBeforeInTranslationUnit(D->getLocation(),
+                                                         AL.getLoc())) {
+        S.Diag(AL.getLoc(), diag::warn_attribute_not_on_decl)
+            << AL << AL.getRange();
+        return;
+      }
+
       if (Options.IgnoreTypeAttributes)
         break;
       if (!AL.isStandardAttributeSyntax() && !AL.isRegularKeywordAttribute()) {
